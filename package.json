@@ -1,0 +1,109 @@
+{
+  "name": "evil-remote-ssh-agent",
+  "displayName": "Evil Remote SSH Agent",
+  "description": "HTTP server extension for remote command execution via SSH agent",
+  "version": "1.0.0",
+   "license": "Unlicense",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Fz0x00/evil-remote-ssh-agent.git"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "ssh",
+    "terminal",
+    "remote",
+    "http-server"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "evil-sshagent.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "evil-sshagent.startServer",
+        "title": "Start HTTP Server"
+      },
+      {
+        "command": "evil-sshagent.stopServer",
+        "title": "Stop HTTP Server"
+      },
+      {
+        "command": "evil-sshagent.createRemoteTerminal",
+        "title": "Create Remote Terminal"
+      },
+      {
+        "command": "evil-sshagent.showTerminalStatus",
+        "title": "Show Terminal Status"
+      },
+      {
+        "command": "evil-sshagent.cleanupIdleTerminals",
+        "title": "Cleanup Idle Terminals"
+      },
+      {
+        "command": "evil-sshagent.destroyAllTerminals",
+        "title": "Destroy All Terminals"
+      },
+      {
+        "command": "evil-sshagent.showCommandLogPath",
+        "title": "Show Command Log Path"
+      },
+      {
+        "command": "evil-sshagent.showDebugLogPath",
+        "title": "Show Debug Log Path"
+      },
+      {
+        "command": "evil-sshagent.checkPersistentStorage",
+        "title": "Check Persistent Storage"
+      },
+      {
+        "command": "evil-sshagent.testPluginStatus",
+        "title": "Test Plugin Status"
+      },
+      {
+        "command": "evil-sshagent.triggerHealthCheck",
+        "title": "Trigger Terminal Health Check"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "evil-sshagent.createRemoteTerminal",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r"
+      },
+      {
+        "command": "evil-sshagent.startServer",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s"
+      },
+      {
+        "command": "evil-sshagent.stopServer",
+        "key": "ctrl+shift+q",
+        "mac": "cmd+shift+q"
+      }
+    ],
+    "menus": {}
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/node": "22.x",
+    "eslint": "^9.32.0"
+  }
+}

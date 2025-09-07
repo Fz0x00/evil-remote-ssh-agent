@@ -1,0 +1,175 @@
+name: Build and Release VSCode Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.1)'
+        required: true
+        default: '1.0.1'
+      create_release:
+        description: 'Create GitHub Release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install vsce
+      run: npm install -g @vscode/vsce
+      
+    - name: Package extension
+      run: vsce package --no-update-package-json
+      
+    - name: Get version from package.json
+      id: get_version
+      run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      
+    - name: Get tag version
+      if: startsWith(github.ref, 'refs/tags/')
+      id: tag_version
+      run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+    - name: Use input version for manual trigger
+      if: github.event_name == 'workflow_dispatch'
+      id: input_version
+      run: echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+      
+    - name: Determine final version
+      id: final_version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "version=${{ steps.input_version.outputs.version }}" >> $GITHUB_OUTPUT
+        elif [ "${{ github.event_name }}" == "push" ] && [ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]; then
+          echo "version=${{ steps.tag_version.outputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${{ steps.get_version.outputs.version }}" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Find VSIX file
+      id: find_vsix
+      run: echo "vsix_path=$(ls *.vsix | head -1)" >> $GITHUB_OUTPUT
+      
+    - name: Upload VSIX as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: evil-remote-ssh-agent-v${{ steps.final_version.outputs.version }}.vsix
+        path: ${{ steps.find_vsix.outputs.vsix_path }}
+        
+    - name: Create Release
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.final_version.outputs.version }}
+        name: Evil Remote SSH Agent v${{ steps.final_version.outputs.version }}
+        body: |
+          ## 🎉 Evil Remote SSH Agent v${{ steps.final_version.outputs.version }} Release
+          
+          ### ⚠️ 重要安全警告
+          **此工具仅用于教育和安全研究目的！**
+          
+          ### 📋 项目说明
+          这是一个用于安全演示的 VS Code 扩展，旨在证明以下安全风险：
+          
+          **被入侵的远程计算机可能通过 VS Code Remote-SSH 扩展在本地计算机上执行恶意代码。**
+          
+          ### ✨ 功能特性
+          - 🌐 **HTTP服务器**：自动启动HTTP服务器（默认端口8080）
+          - 🖥️ **终端管理**：自动创建Mouse和Cat终端
+          - 🚀 **远程命令执行**：通过HTTP API执行远程命令
+          - 📝 **命令日志**：记录所有命令执行历史
+          - 🔒 **隐蔽操作**：Mouse终端隐藏，Cat终端用于掩盖活动
+          
+          ### 📦 安装方法
+          1. 下载 \`evil-remote-ssh-agent-${{ steps.final_version.outputs.version }}.vsix\` 文件
+          2. 在VS Code中按 \`Cmd+Shift+P\` (Mac) 或 \`Ctrl+Shift+P\` (Windows/Linux)
+          3. 输入 \`Extensions: Install from VSIX...\`
+          4. 选择下载的VSIX文件进行安装
+          
+          ### 🔧 使用方法
+          #### 服务启动
+          - 安装后扩展会自动启动HTTP服务器（默认端口8080）
+          - 系统会自动创建两个终端：
+            - **Mouse终端**：隐藏的远程终端，用于执行命令
+            - **Cat终端**：可见的本地终端，用于掩盖Mouse终端的活动
+          
+          #### 命令执行
+          通过HTTP API发送命令请求：
+          ```bash
+          # GET请求示例
+          curl "http://localhost:8080/cmd?command=whoami"
+          
+          # POST请求示例
+          curl -X POST "http://localhost:8080/cmd" -d "command=ls -la"
+          
+          # 健康检查
+          curl "http://localhost:8080/health"
+          ```
+          
+          ### 🔧 快捷键
+          - \`Cmd+Shift+R\` - 创建远程终端
+          - \`Cmd+Shift+S\` - 启动HTTP服务器
+          - \`Cmd+Shift+Q\` - 停止HTTP服务器
+          
+          ### 📋 API端点
+          - \`GET /health\` - 健康检查
+          - \`GET/POST /cmd?command=<command>\` - 执行远程命令
+          - \`GET /\` - API信息
+          
+          ### 🛡️ 安全注意事项
+          - **仅用于教育和安全研究目的**
+          - **请仅连接到您完全信任的远程计算机**
+          - **严禁在生产环境或不受信任的网络中使用**
+          - **使用前请确保您了解相关安全风险**
+          
+          ### 📚 相关资源
+          - [Vibe Hacking: Abusing Developer Trust](https://blog.calif.io/p/vibe-hacking-abusing-developer-trust)
+          - [VS Code SSH WTF](https://fly.io/blog/vscode-ssh-wtf/)
+          
+          ### 🔗 相关项目
+          基于 [evil-remote-ssh-agent](https://github.com/Fz0x00/evil-remote-ssh-agent) 项目进行开发。
+          
+          ---
+          **免责声明**: 此工具仅用于安全研究和教育目的。使用者需要自行承担使用风险，开发者不对任何误用或滥用行为负责。
+        files: ${{ steps.find_vsix.outputs.vsix_path }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update package.json version for manual trigger
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        npm version ${{ steps.final_version.outputs.version }} --no-git-tag-version
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add package.json
+        git commit -m "Bump version to ${{ steps.final_version.outputs.version }}"
+        git push
+        
+    - name: Create tag for manual trigger
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        git tag v${{ steps.final_version.outputs.version }}
+        git push origin v${{ steps.final_version.outputs.version }}

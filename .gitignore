@@ -1,0 +1,28 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VS Code
+.vscode/
+*.vsix
+
+# Logs
+*.log
+logs/
+.evil-sshagent-logs/
+.evil-sshagent-command-log.json
+.evil-sshagent-terminals.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
+# Output files
+evil_sshagent_output_*.txt
